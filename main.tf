@@ -30,7 +30,6 @@ resource "aws_lb_listener" "labs" {
 
 resource "aws_autoscaling_group" "labs" {
   name             = "labs-asg"
-#  availability_zones = [var.az1, var.az2]
   desired_capacity = 2
   min_size         = 1
   max_size         = 3
@@ -69,7 +68,7 @@ EOF
 
 resource "aws_route53_record" "labs" {
   zone_id = var.dns_hosted_zone_id
-  name    = "ec2site.ukrtux.com"
+  name    = var.dns_site_name
   type    = "A"
   alias {
     name                   = aws_lb.labs.dns_name
