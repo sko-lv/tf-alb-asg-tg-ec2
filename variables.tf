@@ -3,11 +3,6 @@ variable "aws_region" {
   type        = string
 }
 
-variable "security_group_ids" {
-  description = "The ID of the security group for the ALB"
-  type        = list(string)
-}
-
 variable "subnet_ids" {
   description = "The ID of the subnet where the ALB will be deployed"
   type        = list(string)
