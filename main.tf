@@ -1,7 +1,3 @@
-provider "aws" {
-  region = var.aws_region
-}
-
 # Security group for ALB
 resource "aws_security_group" "alb_sg" {
   name        = "lab2-alb-security-group"

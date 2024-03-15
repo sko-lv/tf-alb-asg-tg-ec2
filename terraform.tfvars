@@ -1,4 +1,3 @@
-aws_region = "us-east-1"
 dns_hosted_zone_id = "Z0308331DI9AXYH3SRKS"
 dns_site_name = "ec2site.ukrtux.com"
 vpc_id = "vpc-09963dcec6add169b"
