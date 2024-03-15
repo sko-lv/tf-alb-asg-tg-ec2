@@ -13,16 +13,6 @@ variable "vpc_id" {
   type        = string
 }
 
-# variable "az1" {
-#   description = "The Availability Zone 1 for the Auto Scaling Group"
-#   type        = string
-# }
-
-# variable "az2" {
-#   description = "The Availability Zone 2 for the Auto Scaling Group"
-#   type        = string
-# }
-
 variable "ami_id" {
   description = "The ID of the AMI for the instances launched by the Auto Scaling Group"
   type        = string
