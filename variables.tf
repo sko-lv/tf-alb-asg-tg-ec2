@@ -27,3 +27,8 @@ variable "dns_site_name" {
   description = "FQDN for site A-record"
   type        = string
 }
+
+variable "ssl_certificate_arn" {
+  description = "ARN of SSL/TLS certificate"
+  type        = string
+}

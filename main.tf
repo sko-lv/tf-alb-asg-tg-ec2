@@ -21,7 +21,6 @@ resource "aws_security_group" "alb_sg" {
     to_port         = 65535
     protocol        = "tcp"
     cidr_blocks     = ["0.0.0.0/0"]
-    #security_groups = [aws_security_group.labs_lt_sg.id]
   }
 }
 
@@ -30,19 +29,19 @@ resource "aws_security_group" "labs_lt_sg" {
   name        = "labs-lt-security-group"
   description = "Security group for lab2 Launch Template"
   vpc_id      = var.vpc_id
-
   ingress {
     from_port        = 80
     to_port          = 80
     protocol         = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+# Next rule is only needed for ec2 troubleshooting via SSH
+#ingress {
+#     from_port   = 22
+#     to_port     = 22
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
   egress {
     from_port       = 0
     to_port         = 65535
@@ -52,6 +51,7 @@ resource "aws_security_group" "labs_lt_sg" {
 
 }
 
+#Create Application Load Balancer
 resource "aws_lb" "labs" {
   name               = "labs-alb"
   load_balancer_type = "application"
@@ -60,21 +60,38 @@ resource "aws_lb" "labs" {
   subnets            = var.subnet_ids
 }
 
+#Create Target Group for ALB
 resource "aws_lb_target_group" "labs" {
   name     = "labs-tg"
   port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id
 }
-
-resource "aws_lb_listener" "labs" {
+# Create HTTPS Listener
+resource "aws_lb_listener" "labs_https" {
   load_balancer_arn = aws_lb.labs.arn
-  port              = "80"
-  protocol          = "HTTP"
-
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = var.ssl_certificate_arn
+  
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.labs.arn
+  }
+}
+# Create HTTP listener
+resource "aws_lb_listener" "labs_http" {
+  load_balancer_arn = aws_lb.labs.arn
+  port              = "80"
+  protocol          = "HTTP"
+  default_action {
+    type          = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
   }
 }
 
