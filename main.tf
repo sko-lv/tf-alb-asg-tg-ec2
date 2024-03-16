@@ -10,22 +10,47 @@ resource "aws_security_group" "alb_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   ingress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-egress {
+  egress {
     from_port       = 0
     to_port         = 65535
     protocol        = "tcp"
     cidr_blocks     = ["0.0.0.0/0"]
-#    security_groups = [aws_security_group.target_group_sg.id]  # Assuming you have a separate security group for the target group
+    #security_groups = [aws_security_group.labs_lt_sg.id]
   }
 }
 
+#Security group for Launch Template
+resource "aws_security_group" "labs_lt_sg" {
+  name        = "labs-lt-security-group"
+  description = "Security group for lab2 Launch Template"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    security_groups = [aws_security_group.alb_sg.id]
+  }
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port       = 0
+    to_port         = 65535
+    protocol        = "tcp"
+    cidr_blocks     = ["0.0.0.0/0"]
+  }
+
+}
 
 resource "aws_lb" "labs" {
   name               = "labs-alb"
@@ -58,16 +83,16 @@ resource "aws_autoscaling_group" "labs" {
   desired_capacity = 2
   min_size         = 1
   max_size         = 3
+  vpc_zone_identifier  = var.subnet_ids
   launch_template {
     id      = aws_launch_template.labs.id
     version = aws_launch_template.labs.latest_version
   }
   target_group_arns    = [aws_lb_target_group.labs.arn]
-  vpc_zone_identifier  = var.subnet_ids
 }
 
 resource "aws_launch_template" "labs" {
-  name          = "labs-lc"
+  name          = "labs-lt"
   image_id      = var.ami_id
   instance_type = "t2.micro"
   block_device_mappings {
@@ -84,7 +109,7 @@ apt-get install -y nginx
 curl -s http://169.254.169.254/latest/meta-data/instance-id > /var/www/html/index.nginx-debian.html
 EOF
 )
-
+  vpc_security_group_ids = [aws_security_group.labs_lt_sg.id]
   key_name = var.ssh_key_name
   lifecycle {
     create_before_destroy = true
