@@ -1,3 +1,4 @@
+
 # Security group for ALB
 resource "aws_security_group" "alb_sg" {
   name        = "lab2-alb-security-group"
@@ -51,7 +52,7 @@ resource "aws_security_group" "labs_lt_sg" {
 
 }
 
-#Create Application Load Balancer
+# Create Application Load Balancer
 resource "aws_lb" "labs" {
   name               = "labs-alb"
   load_balancer_type = "application"
@@ -60,7 +61,7 @@ resource "aws_lb" "labs" {
   subnets            = var.subnet_ids
 }
 
-#Create Target Group for ALB
+# Create Target Group for ALB
 resource "aws_lb_target_group" "labs" {
   name     = "labs-tg"
   port     = 80
@@ -73,14 +74,14 @@ resource "aws_lb_listener" "labs_https" {
   port              = "443"
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-2016-08"
-  certificate_arn   = var.ssl_certificate_arn
+  certificate_arn   = aws_acm_certificate_validation.lab2.certificate_arn
   
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.labs.arn
   }
 }
-# Create HTTP listener
+# Create HTTP listener with HTTP->HTTPS redirect
 resource "aws_lb_listener" "labs_http" {
   load_balancer_arn = aws_lb.labs.arn
   port              = "80"
@@ -95,6 +96,7 @@ resource "aws_lb_listener" "labs_http" {
   }
 }
 
+# Create AWS ASG 
 resource "aws_autoscaling_group" "labs" {
   name             = "labs-asg"
   desired_capacity = 2
@@ -108,6 +110,7 @@ resource "aws_autoscaling_group" "labs" {
   target_group_arns    = [aws_lb_target_group.labs.arn]
 }
 
+# Create Launch template for Target Group
 resource "aws_launch_template" "labs" {
   name          = "labs-lt"
   image_id      = var.ami_id
@@ -133,7 +136,8 @@ EOF
   }
 }
 
-resource "aws_route53_record" "labs" {
+# Create DNS A-record for site:
+resource "aws_route53_record" "lab2site" {
   zone_id = var.dns_hosted_zone_id
   name    = var.dns_site_name
   type    = "A"
@@ -142,4 +146,28 @@ resource "aws_route53_record" "labs" {
     zone_id                = aws_lb.labs.zone_id
     evaluate_target_health = true
   }
+}
+# Create and validate ACM TLS certificate
+resource "aws_acm_certificate" "lab2" {
+  domain_name       = var.dns_site_name
+  validation_method = "DNS"
+}
+resource "aws_route53_record" "lab2" {
+  for_each = {
+    for dvo in aws_acm_certificate.lab2.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  }
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = var.dns_hosted_zone_id
+}
+resource "aws_acm_certificate_validation" "lab2" {
+  certificate_arn         = aws_acm_certificate.lab2.arn
+  validation_record_fqdns = [for record in aws_route53_record.lab2 : record.fqdn]
 }
