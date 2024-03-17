@@ -1,12 +1,3 @@
-variable "subnet_ids" {
-  description = "The ID of the subnet where the ALB will be deployed"
-  type        = list(string)
-}
-
-variable "vpc_id" {
-  description = "The ID of the VPC where the resources will be deployed"
-  type        = string
-}
 
 variable "ami_id" {
   description = "The ID of the AMI for the instances launched by the Auto Scaling Group"

@@ -16,23 +16,3 @@ terraform {
     encrypt        = true
   }
 }
-
-
-data "aws_region" "current" {}
-output "aws_region" {
-  description = "Current AWS region"
-  value = data.aws_region.current.name
-}
-
-locals {
-  avz1 = "${data.aws_region.current.name}a"
-  avz2 = data.aws_region.current.name != "" ? "${data.aws_region.current.name}b" : "n/a"
-}
-output "avz1" {
-  description = "Generated value for AZ1 (e.g. us-east-1a)"
-  value = local.avz1
-}
-output "avz2" {
-  description = "Generated value for AZ2 (e.g. us-east-1b)"
-  value = local.avz2
-}

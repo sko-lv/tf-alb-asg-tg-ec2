@@ -1,9 +1,43 @@
+resource "aws_vpc" "vpc" {
+  cidr_block       = "10.0.0.0/16"
+  instance_tenancy = "default"
+}
+
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.vpc.id
+}
+
+data "aws_route_table" "vpc-rt" {
+  vpc_id = aws_vpc.vpc.id
+}
+
+resource "aws_route" "internet_access" {
+  route_table_id         = data.aws_route_table.vpc-rt.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.igw.id
+}
+
+data "aws_availability_zones" "available" {}
+
+resource "aws_subnet" "subnet_1" {
+  vpc_id                  = aws_vpc.vpc.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[0]
+  map_public_ip_on_launch = true
+}
+
+resource "aws_subnet" "subnet_2" {
+  vpc_id                  = aws_vpc.vpc.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[1]
+  map_public_ip_on_launch = true
+}
 
 # Security group for ALB
 resource "aws_security_group" "alb_sg" {
   name        = "lab2-alb-security-group"
   description = "Security group for lab2 ALB"
-  vpc_id      = var.vpc_id
+  vpc_id      = aws_vpc.vpc.id
 
   ingress {
     from_port   = 80
@@ -29,7 +63,7 @@ resource "aws_security_group" "alb_sg" {
 resource "aws_security_group" "labs_lt_sg" {
   name        = "labs-lt-security-group"
   description = "Security group for lab2 Launch Template"
-  vpc_id      = var.vpc_id
+  vpc_id      = aws_vpc.vpc.id
   ingress {
     from_port        = 80
     to_port          = 80
@@ -58,7 +92,7 @@ resource "aws_lb" "labs" {
   load_balancer_type = "application"
   internal           = false
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = var.subnet_ids
+  subnets            = [aws_subnet.subnet_1.id,aws_subnet.subnet_2.id]
 }
 
 # Create Target Group for ALB
@@ -66,7 +100,7 @@ resource "aws_lb_target_group" "labs" {
   name     = "labs-tg"
   port     = 80
   protocol = "HTTP"
-  vpc_id   = var.vpc_id
+  vpc_id   = aws_vpc.vpc.id
 }
 # Create HTTPS Listener
 resource "aws_lb_listener" "labs_https" {
@@ -102,7 +136,7 @@ resource "aws_autoscaling_group" "labs" {
   desired_capacity = 2
   min_size         = 1
   max_size         = 3
-  vpc_zone_identifier  = var.subnet_ids
+  vpc_zone_identifier  = [aws_subnet.subnet_1.id,aws_subnet.subnet_2.id]
   launch_template {
     id      = aws_launch_template.labs.id
     version = aws_launch_template.labs.latest_version
