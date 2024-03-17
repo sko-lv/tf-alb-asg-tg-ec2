@@ -4,7 +4,9 @@ provider "aws" {
   shared_credentials_files = ["~/.aws/credentials"]
 }
 
-# Configure Terraform backend to use S3 with DynamoDB locking for dev environment
+# Configure Terraform S3 backend to use with DynamoDB locking for current environment
+# s3 bucket and DynamoDB table should be created before.
+# VARIABLES IS NOT ALLOWED HERE! 
 terraform {
   backend "s3" {
     bucket         = "labs2024-terraform-state-bucket-12"
@@ -13,4 +15,24 @@ terraform {
     dynamodb_table = "terraform-state-lock-table"
     encrypt        = true
   }
+}
+
+
+data "aws_region" "current" {}
+output "aws_region" {
+  description = "Current AWS region"
+  value = data.aws_region.current.name
+}
+
+locals {
+  avz1 = "${data.aws_region.current.name}a"
+  avz2 = data.aws_region.current.name != "" ? "${data.aws_region.current.name}b" : "n/a"
+}
+output "avz1" {
+  description = "Generated value for AZ1 (e.g. us-east-1a)"
+  value = local.avz1
+}
+output "avz2" {
+  description = "Generated value for AZ2 (e.g. us-east-1b)"
+  value = local.avz2
 }
