@@ -148,7 +148,7 @@ resource "aws_autoscaling_group" "labs" {
 resource "aws_launch_template" "labs" {
   name          = "labs-lt"
   image_id      = var.ami_id
-  instance_type = "t2.micro"
+  instance_type = "t2.nano"
   block_device_mappings {
     device_name = "/dev/xvda"
     ebs {
