@@ -52,10 +52,10 @@ resource "aws_security_group" "alb_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   egress {
-    from_port       = 0
-    to_port         = 65535
-    protocol        = "tcp"
-    cidr_blocks     = ["0.0.0.0/0"]
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -65,23 +65,23 @@ resource "aws_security_group" "labs_lt_sg" {
   description = "Security group for lab2 Launch Template"
   vpc_id      = aws_vpc.vpc.id
   ingress {
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
-# Next rule is only needed for ec2 troubleshooting via SSH
-#ingress {
-#     from_port   = 22
-#     to_port     = 22
-#     protocol    = "tcp"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
+  # Next rule is only needed for ec2 troubleshooting via SSH
+  #ingress {
+  #     from_port   = 22
+  #     to_port     = 22
+  #     protocol    = "tcp"
+  #     cidr_blocks = ["0.0.0.0/0"]
+  #   }
   egress {
-    from_port       = 0
-    to_port         = 65535
-    protocol        = "tcp"
-    cidr_blocks     = ["0.0.0.0/0"]
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
 }
@@ -92,7 +92,7 @@ resource "aws_lb" "labs" {
   load_balancer_type = "application"
   internal           = false
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [aws_subnet.subnet_1.id,aws_subnet.subnet_2.id]
+  subnets            = [aws_subnet.subnet_1.id, aws_subnet.subnet_2.id]
 }
 
 # Create Target Group for ALB
@@ -109,7 +109,7 @@ resource "aws_lb_listener" "labs_https" {
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-2016-08"
   certificate_arn   = aws_acm_certificate_validation.lab2.certificate_arn
-  
+
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.labs.arn
@@ -121,7 +121,7 @@ resource "aws_lb_listener" "labs_http" {
   port              = "80"
   protocol          = "HTTP"
   default_action {
-    type          = "redirect"
+    type = "redirect"
     redirect {
       port        = "443"
       protocol    = "HTTPS"
@@ -132,16 +132,16 @@ resource "aws_lb_listener" "labs_http" {
 
 # Create AWS ASG 
 resource "aws_autoscaling_group" "labs" {
-  name             = "labs-asg"
-  desired_capacity = 2
-  min_size         = 1
-  max_size         = 3
-  vpc_zone_identifier  = [aws_subnet.subnet_1.id,aws_subnet.subnet_2.id]
+  name                = "labs-asg"
+  desired_capacity    = 2
+  min_size            = 1
+  max_size            = 3
+  vpc_zone_identifier = [aws_subnet.subnet_1.id, aws_subnet.subnet_2.id]
   launch_template {
     id      = aws_launch_template.labs.id
     version = aws_launch_template.labs.latest_version
   }
-  target_group_arns    = [aws_lb_target_group.labs.arn]
+  target_group_arns = [aws_lb_target_group.labs.arn]
 }
 
 # Create Launch template for Target Group
@@ -156,15 +156,15 @@ resource "aws_launch_template" "labs" {
     }
   }
   # User data script for Nginx installation
-  user_data = base64encode (<<EOF
+  user_data = base64encode(<<EOF
 #!/bin/bash
 apt-get -y update
 apt-get install -y nginx
 curl -s http://169.254.169.254/latest/meta-data/instance-id > /var/www/html/index.nginx-debian.html
 EOF
-)
+  )
   vpc_security_group_ids = [aws_security_group.labs_lt_sg.id]
-  key_name = var.ssh_key_name
+  key_name               = var.ssh_key_name
   lifecycle {
     create_before_destroy = true
   }
