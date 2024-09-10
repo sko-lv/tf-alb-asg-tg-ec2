@@ -193,8 +193,11 @@ apt-get install -y nginx
 curl -s http://169.254.169.254/latest/meta-data/instance-id > /var/www/html/index.nginx-debian.html
 EOF
   )
-  vpc_security_group_ids = [aws_security_group.labs_lt_sg.id]
-  key_name               = var.ssh_key_name
+  key_name                = var.ssh_key_name
+  network_interfaces {
+    security_groups             = [aws_security_group.labs_lt_sg.id]
+    associate_public_ip_address = true
+  }
   iam_instance_profile {
     name = aws_iam_instance_profile.lab2_ec2_profile.name
   }
