@@ -144,6 +144,36 @@ resource "aws_autoscaling_group" "labs" {
   target_group_arns = [aws_lb_target_group.labs.arn]
 }
 
+# Create IAM Role and Instance Profile for EC2
+resource "aws_iam_role" "lab2_ec2_role" {
+  name = "lab2-ec2-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action    = "sts:AssumeRole",
+        Effect    = "Allow",
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# Attach the AmazonSSMManagedInstanceCore policy to the role
+resource "aws_iam_role_policy_attachment" "lab2_ec2_policy" {
+  role       = aws_iam_role.lab2_ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# Create an instance profile for the EC2 instance
+resource "aws_iam_instance_profile" "lab2_ec2_profile" {
+  name = "lab2-ec2-profile"
+  role = aws_iam_role.lab2_ec2_role.name
+}
+
 # Create Launch template for Target Group
 resource "aws_launch_template" "labs" {
   name          = "labs-lt"
@@ -165,6 +195,9 @@ EOF
   )
   vpc_security_group_ids = [aws_security_group.labs_lt_sg.id]
   key_name               = var.ssh_key_name
+  iam_instance_profile {
+    name = aws_iam_instance_profile.lab2_ec2_profile.name
+  }
   lifecycle {
     create_before_destroy = true
   }
